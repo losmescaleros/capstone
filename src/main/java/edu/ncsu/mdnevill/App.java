@@ -18,16 +18,31 @@ import gov.lbl.fastbit.*;
 import javax.sound.sampled.Line;
 
 /**
- * Created by losmescaleros on 4/21/15.
+ * @author Mitchell Neville
+ * This is a static class that attempts to benchmark MapDB B-Tree Indices and FastBit
+ * Bitmap Indices.
  */
 public class App {
+    // MapDB DB object
     static DB db;
+    // Where to save the DB
     static File dbFile;
+    // Book repository used for MapDB interactions
     static MapDbBookRepository bTreeRepo;
+    // Book data
     static final String booksCsv = "data/booksWithPrices.csv";
+    // FastBit instance
     static FastBit fb;
+    // Directory to save FastBit indices
     static String fb_dir = "tmp";
 
+    /**
+     * Build the databases and indices, then perform various queries to benchmark
+     * each index type. The queries will print output to the console, indicating
+     * the time it took to execute.
+     * @param args
+     * @throws IOException
+     */
     public static void main(String[] args) throws IOException
     {
         dbFile = File.createTempFile("mapdb", "db");
@@ -37,24 +52,27 @@ public class App {
 
         bTreeRepo = new MapDbBookRepository(db);
 
+        // Initialize the databases with a dataset. The data/booksWithPrices.csv dataset
+        // contains over 70,000 rows. This method call should be changed to change the
+        // cardinality of the benchmark we are performing. For example, we might use
+        // booksCsv with 1000 rows as: initializeDb(booksCsv, 1000)
+        initializeDb(booksCsv, 1000);
 
-        initializeDb(booksCsv, 70000);
-
+        // Execute the various query types
         booksByYearEqualityQuery();
         booksByYearRangeQuery();
         booksByYearAndPriceRangeQuery();
-
-        /*initializeDb(booksCsv, 5000);
-        booksByYearEqualityQuery();
-        booksByYearRangeQuery();
-        booksByYearAndPriceRangeQuery();*/
     }
 
+    /**
+     * Perform equality queries on MapDB and FastBit. The equality query is supposed to be similar
+     * to the SQL statement 'Select * FROM Books WHERE year = 2001'
+     */
     public static void booksByYearEqualityQuery()
     {
         System.out.println();
         System.out.println("Executing equality query on books by year for FastBit and MapDb B-Tree...");
-        System.out.println("Query: 'Select * Books WHERE year = 2001'");
+        System.out.println("Query: 'Select * FROM Books WHERE year = 2001'");
         System.out.println("FastBit execution:");
         long start = 0;
         long end = 0;
@@ -74,11 +92,15 @@ public class App {
         System.out.println("MapDb got " + books.size() + " hits in " + (end - start) + " milliseconds");
     }
 
+    /**
+     * Perform range queries on MapDB and FastBit. The range query is supposed to be similar
+     * to the SQL statement 'Select * FROM Books WHERE year >= 2001'
+     */
     public static void booksByYearRangeQuery()
     {
         System.out.println();
         System.out.println("Executing range query on books by year for FastBit and MapDb B-Tree...");
-        System.out.println("Query: 'Select * Books WHERE year >= 2000'");
+        System.out.println("Query: 'Select FROM * Books WHERE year >= 2000'");
         System.out.println("FastBit execution:");
         long start = 0;
         long end = 0;
@@ -98,11 +120,15 @@ public class App {
         System.out.println("MapDb got " + books.size() + " hits in " + (end - start) + " milliseconds");
     }
 
+    /**
+     * Perform mixed queries on MapDB and FastBit. The mixed query is supposed to be similar
+     * to the SQL statement 'Select * FROM Books WHERE year = 2000 AND price <= 100.00'
+     */
     public static void booksByYearAndPriceRangeQuery()
     {
         System.out.println();
         System.out.println("Executing range query on books by year for FastBit and MapDb B-Tree...");
-        System.out.println("Query: 'Select * Books WHERE year = 2000 AND price <= 100.00'");
+        System.out.println("Query: 'Select * FROM Books WHERE year = 2000 AND price <= 100.00'");
         System.out.println("FastBit execution:");
         long start = 0;
         long end = 0;
@@ -122,6 +148,10 @@ public class App {
         System.out.println("MapDb got " + books.size() + " hits in " + (end - start) + " milliseconds");
     }
 
+    /**
+     * Randomly generate prices between $0.00 and $200.00 for each row of the books.csv file
+     * @param csvFile
+     */
     public static void addPrice(String csvFile)
     {
         File inFile = new File(csvFile);
@@ -164,6 +194,12 @@ public class App {
         }
     }
 
+    /**
+     * Initialize the databases using the CSV files, indicating how many rows
+     * to use
+     * @param csvFile
+     * @param length
+     */
     public static void initializeDb(String csvFile, int length)
     {
         File f = new File(fb_dir);
@@ -176,7 +212,12 @@ public class App {
                 System.out.println(e.getMessage());
             }
         }
-        fb = new FastBit("<binning none/><encoding interval-equality/>");
+        // Change the FastBit options here according to
+        // https://sdm.lbl.gov/~kewu/fastbit/doc/indexSpec.html
+        // Basic options for no binning and equality encoding: <binning none/><encoding equality/>
+        // Binning with a specific number: <binning nbins=2000/>
+        // Range encoding: <encoding range/>
+        fb = new FastBit("<binning none/><encoding equality/>");
         fb.purge_indexes(fb_dir);
         bTreeRepo.clear();
 
@@ -190,6 +231,7 @@ public class App {
 
         File inFile = new File(csvFile);
         LineIterator it = null;
+        // Read the CSV file and create a new Book for each line. 
         try{
             it = FileUtils.lineIterator(inFile, "UTF-8");
 
@@ -211,7 +253,7 @@ public class App {
                         tokens[4],
                         year,
                         price);
-
+                // Add the book to the MapDB B-Tree
                 bTreeRepo.add(b, count);
             }
             System.out.println();
@@ -223,6 +265,7 @@ public class App {
         finally{
             LineIterator.closeQuietly(it);
         }
+        // Add the FastBit indices and write them
         int[] years = ArrayUtils.toPrimitive(fbYears.toArray(new Integer[0]));
         int[] ids = ArrayUtils.toPrimitive(fbIds.toArray(new Integer[0]));
         double[] prices = ArrayUtils.toPrimitive(fbPrices.toArray(new Double[0]));

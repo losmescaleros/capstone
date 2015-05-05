@@ -4,7 +4,9 @@ import java.io.Serializable;
 import java.text.DecimalFormat;
 
 /**
- * Created by losmescaleros on 4/24/15.
+ * @author Mitchell Neville
+ * This class represents a book with title, author, ISBN, publisher with year,
+ * and price.
  */
 public class Book implements Serializable {
     final String title;
@@ -14,6 +16,15 @@ public class Book implements Serializable {
     final int year;
     final double price;
 
+    /**
+     * Create a new book
+     * @param t Title
+     * @param a Author
+     * @param isbn ISBN number
+     * @param p Publisher
+     * @param y Year
+     * @param pr Price
+     */
     public Book(String t, String a, String isbn, String p, int y, double pr)
     {
         this.title = t;

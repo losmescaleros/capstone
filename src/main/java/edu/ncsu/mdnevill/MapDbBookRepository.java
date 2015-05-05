@@ -9,15 +9,25 @@ import java.util.*;
 import java.util.concurrent.ConcurrentNavigableMap;
 
 /**
- * Created by losmescaleros on 4/24/15.
+ * @author Mitchell Neville
+ * This class is a repository for interacting with a MapDB database of Book
+ * objects.
  */
 public class MapDbBookRepository {
+    // MapDB's B-Tree Index implementation
     BTreeMap<Integer, Book> bTree;
     BTreeMap<Fun.Tuple2<Integer, Double>, Book> subTree;
+    // Used for querying Books by author
     NavigableSet<Fun.Tuple2<String, Integer>> bookByAuthor;
+    // Used for querying Books by publishing year
     NavigableSet<Fun.Tuple2<Integer, Integer>> bookByYear;
+    // Used for querying Books by price
     NavigableSet<Fun.Tuple2<Double, Integer>> bookByPrice;
 
+    /**
+     * Create a new repository
+     * @param db MapDB DB object
+     */
     public MapDbBookRepository(DB db)
     {
         this.bTree = db.getTreeMap("books");
@@ -25,6 +35,9 @@ public class MapDbBookRepository {
         setMapDbBindings();
     }
 
+    /**
+     * Set the bindings for performing queries on attributes
+     */
     public void setMapDbBindings()
     {
         bookByAuthor = new TreeSet<Fun.Tuple2<String, Integer>>();
@@ -51,27 +64,49 @@ public class MapDbBookRepository {
         });
     }
 
+    /**
+     * Get the size of the B-Tree
+     * @return
+     */
     public int size()
     {
         return bTree.size();
     }
 
+    /**
+     * Get a book by its ID
+     * @param id
+     * @return
+     */
     public Book get(int id)
     {
         return bTree.get(id);
     }
 
+    /**
+     * Add a book to the database, specifying its ID
+     * @param b
+     * @param id
+     */
     public void add(Book b, int id)
     {
         bTree.put(id, b);
         subTree.put(Fun.t2(b.year, b.price), b);
     }
 
+    /**
+     * Clear the B-Tree
+     */
     public void clear()
     {
         bTree.clear();
     }
 
+    /**
+     * Get a book by its author
+     * @param author
+     * @return
+     */
     public Collection<Book> getByAuthor(String author)
     {
         Collection<Book> ret = new ArrayList<Book>();
@@ -83,6 +118,14 @@ public class MapDbBookRepository {
         return ret;
     }
 
+    /**
+     * Get all books published in a range of years
+     * @param start Start year
+     * @param startInc Is the start year inclusive?
+     * @param end End year
+     * @param endInc Is the end year inclusive?
+     * @return
+     */
     public Collection<Book> getByYear(int start, boolean startInc, int end, boolean endInc)
     {
         Collection<Book> ret = new ArrayList<Book>();
@@ -96,6 +139,12 @@ public class MapDbBookRepository {
         return ret;
     }
 
+    /**
+     * Get all books published after a certain year.
+     * @param start Star year
+     * @param startInc Is the start year inclusive?
+     * @return
+     */
     public Collection<Book> getByYear(int start, boolean startInc)
     {
         Collection<Book> ret = new ArrayList<Book>();
@@ -111,6 +160,11 @@ public class MapDbBookRepository {
         return ret;
     }
 
+    /**
+     * Get all books published in a specific year
+     * @param year
+     * @return
+     */
     public Collection<Book> getByYear(int year)
     {
         Collection<Book> ret = new ArrayList<Book>();
@@ -124,6 +178,13 @@ public class MapDbBookRepository {
         return ret;
     }
 
+    /**
+     * Get all books published in a certain year that are over a certain price
+     * @param year Publishing year
+     * @param startPrice Start price
+     * @param startPriceInc Is the start price inclusive?
+     * @return
+     */
     public Collection<Book> getByYearAndPrice(int year, double startPrice, boolean startPriceInc)
     {
         Collection<Book> ret = new ArrayList<Book>();
@@ -137,6 +198,12 @@ public class MapDbBookRepository {
         return ret;
     }
 
+    /**
+     * Get all books over a certain price
+     * @param start Start price
+     * @param startInc Is the start price inclusive?
+     * @return
+     */
     public Collection<Book> getByPrice(double start, boolean startInc)
     {
         Collection<Book> ret = new ArrayList<Book>();
